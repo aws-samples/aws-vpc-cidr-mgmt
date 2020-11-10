@@ -197,9 +197,6 @@ Resources:
       OperationName: 'lambda'
       ResourceId: !Ref ApiGatewayResource
       RestApiId: !Ref ApiGatewayRestApi
-      RequestValidatorId: !Ref RequestValidator
-      RequestParameters:
-        method.request.querystring.Cidr: true
 
   ApiGatewayUpdateMethod:
     Type: AWS::ApiGateway::Method

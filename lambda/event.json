@@ -1,0 +1,69 @@
+{
+  "body": null,
+  "queryStringParameters": {
+    "Requestor": "cjl",
+    "prefix": "24",
+    "VpcId": "vpc-123456",
+    "Reason": "test",
+    "AccountId": "069558223396",
+    "ProjectCode": "test"
+  },
+  "pathParameters": null,
+  "httpMethod": "POST",
+  "stageVariables": null,
+  "path": "/lambda",
+  "isBase64Encoded": false,
+  "resource": "/lambda",
+  "requestContext": {
+    "requestTime": "16/Oct/2020:15:02:25 +0000",
+    "protocol": "HTTP/1.1",
+    "domainName": "testPrefix.testDomainName",
+    "resourceId": "5m4j1r",
+    "apiId": "qcs7kseb65",
+    "operationName": "lambda",
+    "resourcePath": "/lambda",
+    "httpMethod": "POST",
+    "domainPrefix": "testPrefix",
+    "requestId": "2c082ee4-9520-4b82-80b9-5629863cfdcd",
+    "extendedRequestId": "UglgRGr2LPEFosQ=",
+    "path": "/lambda",
+    "stage": "test-invoke-stage",
+    "requestTimeEpoch": 1602860545691,
+    "identity": {
+      "apiKey": "test-invoke-api-key",
+      "userArn": "arn:aws:sts::069558223396:assumed-role/Admin/cjl-Isengard",
+      "user": "AROARAMP6IISBOAF75HQA:cjl-Isengard",
+      "cognitoIdentityPoolId": null,
+      "userAgent": "aws-internal/3 aws-sdk-java/1.11.848 Linux/4.9.217-0.3.ac.206.84.332.metal1.x86_64 OpenJDK_64-Bit_Server_VM/25.262-b10 java/1.8.0_262 vendor/Oracle_Corporation",
+      "accountId": "069558223396",
+      "principalOrgId": null,
+      "accessKey": "ASIARAMP6IISBRFU3ZLQ",
+      "caller": "AROARAMP6IISBOAF75HQA:cjl-Isengard",
+      "cognitoIdentityId": null,
+      "cognitoAuthenticationType": null,
+      "sourceIp": "test-invoke-source-ip",
+      "apiKeyId": "test-invoke-api-key-id",
+      "cognitoAuthenticationProvider": null
+    },
+    "accountId": "069558223396"
+  },
+  "multiValueHeaders": null,
+  "multiValueQueryStringParameters": {
+    "Requestor": [
+      "cjl"
+    ],
+    "prefix": [
+      "24"
+    ],
+    "VpcId": [
+      "vpc-123456"
+    ],
+    "Reason": [
+      "test"
+    ],
+    "AccountId": [
+      "069558223396"
+    ]
+  },
+  "headers": null
+}

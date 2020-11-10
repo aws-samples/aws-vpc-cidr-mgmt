@@ -1,0 +1,297 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+  CidrApiEndpoint:
+    Type: String
+    Default: https://akg5qkai5g.execute-api.eu-west-1.amazonaws.com/v0
+  VpcCidrSize:
+    Type: String
+  ProjectCode:
+    Type: String
+  Requestor:
+    Type: String
+  Reason:
+    Type: String
+  Environment:
+    Type: String
+    Description: Dev|Stg|Prod
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !GetAtt AllocateCidr.cidr
+
+  getCidr:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+          import boto3
+          import json
+          import sys
+          import urllib
+          import urllib3
+          from botocore.auth import SigV4Auth
+          from botocore.awsrequest import AWSRequest
+          
+          http = urllib3.PoolManager()
+          
+          session = boto3.Session()
+          credentials = session.get_credentials()
+          creds = credentials.get_frozen_credentials()
+          
+          def signed_request(method, url, region, data=None, params=None, headers=None):
+              request = AWSRequest(method=method, url=url, data=data, params=params, headers=headers)
+              # "service_name" is generally "execute-api" for signing API Gateway requests
+              SigV4Auth(creds, "execute-api", region).add_auth(request) 
+              #return requests.request(method=method, url=url, headers=dict(request.headers), data=data)
+              response = http.request(method, url,
+                           headers=dict(request.headers),
+                           )
+                           #{'Content-Type': 'application/json'}
+              return response
+          
+          def lambda_handler(event, context):
+              print(event)
+              
+              AccountId = event['ResourceProperties']['AccountId']
+              prefix = event['ResourceProperties']['Prefix']
+              ProjectCode = event['ResourceProperties']['ProjectCode']
+              Requestor = event['ResourceProperties']['Requestor']
+              Reason = event['ResourceProperties']['Reason']
+              Region = event['ResourceProperties']['Region']
+              Env = event['ResourceProperties']['Env']
+              CidrApiEndpoint = event['ResourceProperties']['CidrApiEndpoint'] \
+                  + '/lambda' \
+                  + '?AccountId=' + AccountId \
+                  + '&prefix=' + prefix \
+                  + '&ProjectCode=' + urllib.parse.quote(ProjectCode) \
+                  + '&Requestor=' + urllib.parse.quote(Requestor) \
+                  + '&Reason=' + urllib.parse.quote(Reason) \
+                  + '&Region=' + Region \
+                  + '&Env=' + Env
+              Region = event['ResourceProperties']['ApiRegion']
+              print(CidrApiEndpoint)
+              
+              import cfnresponse as cfn
+              rd = {}
+              if event['RequestType'] == 'Create':
+                  try:
+                      headers = {'Content-Type': 'application/x-amz-json-1.1'}
+                      response = signed_request('POST', CidrApiEndpoint, Region, data=None, params=None, headers=headers)
+                      if response.status != 200:
+                          rd['error'] = response.data.decode('utf-8')
+                          cfn.send(event, context, cfn.FAILED, rd, 'cidrAllocation')
+                      else:
+                          rd = json.loads(response.data.decode('utf-8'))
+                          cfn.send(event, context, cfn.SUCCESS, rd, 'cidrAllocation')
+                  except Exception as e:
+                      rd['error'] = str(e)
+                      cfn.send(event, context, cfn.FAILED, rd, 'cidrAllocation')
+              elif event['RequestType'] == 'Update':
+                  try:
+                      cfn.send(event, context, cfn.SUCCESS, rd, 'cidrAllocation')
+                  except Exception as e:
+                      rd['error'] = e
+                      cfn.send(event, context, cfn.FAILED, rd, 'cidrAllocation')
+              elif event['RequestType'] == 'Delete':
+                  try:
+                      cfn.send(event, context, cfn.SUCCESS, rd, 'cidrRemoval')
+                  except Exception as e:
+                      rd['error'] = e
+                      cfn.send(event, context, cfn.FAILED, rd, 'cidrRemoval')
+              else:
+                  cfn.send(event, context, cfn.FAILED, rd, 'cidrAllocation')
+              return
+      Description: Allocate Cidr addresses
+      Runtime: python3.7
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 60
+      MemorySize: 256
+      Handler: index.lambda_handler
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:*
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - logs:DescribeLogGroups
+                Resource: !Sub arn:${AWS::Partition}:logs:*:*:*
+
+  AllocateCidr:
+    Type: Custom::AllocateCidr
+    Properties:
+      ServiceToken: !GetAtt getCidr.Arn
+      Prefix: !Ref VpcCidrSize
+      CidrApiEndpoint: !Ref CidrApiEndpoint
+      AccountId: !Ref AWS::AccountId
+      ProjectCode: !Ref ProjectCode
+      Requestor: !Ref Requestor
+      Reason: !Ref Reason
+      Region: !Ref AWS::Region
+      Env: !Ref Environment
+      ApiRegion: !Select [2, !Split [".", !Ref CidrApiEndpoint]]
+
+  updateCidr:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+          import boto3
+          import json
+          import sys
+          import urllib
+          import urllib3
+          from botocore.auth import SigV4Auth
+          from botocore.awsrequest import AWSRequest
+          
+          http = urllib3.PoolManager()
+          
+          session = boto3.Session()
+          credentials = session.get_credentials()
+          creds = credentials.get_frozen_credentials()
+          
+          def signed_request(method, url, region, data=None, params=None, headers=None):
+              request = AWSRequest(method=method, url=url, data=data, params=params, headers=headers)
+              # "service_name" is generally "execute-api" for signing API Gateway requests
+              SigV4Auth(creds, "execute-api", region).add_auth(request)
+              #return requests.request(method=method, url=url, headers=dict(request.headers), data=data)
+              response = http.request(method, url,
+                           headers=dict(request.headers),
+                           )
+                           #{'Content-Type': 'application/json'}
+              print(response.data)
+              return response
+          
+          def lambda_handler(event, context):
+              print(event)
+              
+              Cidr = event['ResourceProperties']['Cidr']
+              VpcId = event['ResourceProperties']['VpcId']
+              Region = event['ResourceProperties']['ApiRegion']
+              
+              import cfnresponse as cfn
+              rd = {}
+              if event['RequestType'] == 'Create':
+                  try:
+                      CidrApiEndpoint = event['ResourceProperties']['CidrApiEndpoint'] \
+                          + '/lambda' \
+                          + '?Cidr=' + urllib.parse.quote(Cidr, safe='') \
+                          + '&VpcId=' + VpcId
+                      print(CidrApiEndpoint)
+                      headers = {'Content-Type': 'application/x-amz-json-1.1'}
+                      response = signed_request('PUT', CidrApiEndpoint, Region, data=None, params=None, headers=headers)
+                      print(response.status)
+                      if response.status != 200:
+                          rd['error'] = response.data.decode('utf-8')
+                          cfn.send(event, context, cfn.FAILED, rd, 'cidrVpcIdUpdate')
+                      else:
+                          rd['result'] = response.data.decode('utf-8')
+                          cfn.send(event, context, cfn.SUCCESS, rd, 'cidrVpcIdUpdate')
+                  except Exception as e:
+                      rd['error'] = str(e)
+                      cfn.send(event, context, cfn.FAILED, rd, 'cidrAllocation')
+              elif event['RequestType'] == 'Update':
+                  try:
+                      cfn.send(event, context, cfn.SUCCESS, rd, 'cidrAllocation')
+                  except Exception as e:
+                      rd['error'] = e
+                      cfn.send(event, context, cfn.FAILED, rd, 'cidrAllocation')
+              elif event['RequestType'] == 'Delete':
+                  try:
+                      CidrApiEndpoint = event['ResourceProperties']['CidrApiEndpoint'] \
+                          + '/lambda' \
+                          + '?Cidr=' + urllib.parse.quote(Cidr, safe='')
+                      headers = {'Content-Type': 'application/x-amz-json-1.1'}
+                      response = signed_request('DELETE', CidrApiEndpoint, Region, data=None, params=None, headers=headers)
+                      print(response.status)
+                      if response.status != 200:
+                          rd['error'] = response.data.decode('utf-8')
+                          cfn.send(event, context, cfn.FAILED, rd, 'cidrAllocation')
+                      else:
+                          rd['result'] = response.data.decode('utf-8')
+                          cfn.send(event, context, cfn.SUCCESS, rd, 'cidrRemoval')
+                  except Exception as e:
+                      rd['error'] = e
+                      cfn.send(event, context, cfn.FAILED, rd, 'cidrRemoval')
+              else:
+                  cfn.send(event, context, cfn.FAILED, rd, 'cidrAllocation')
+              return
+      Description: Allocate Cidr addresses
+      Runtime: python3.7
+      Role: !GetAtt UpdateCidrLambdaExecutionRole.Arn
+      Timeout: 60
+      MemorySize: 256
+      Handler: index.lambda_handler
+
+  UpdateCidrLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:*
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - logs:DescribeLogGroups
+                Resource: !Sub arn:${AWS::Partition}:logs:*:*:*
+
+  UpdateCidr:
+    Type: Custom::updateCidr
+    Properties:
+      ServiceToken: !GetAtt updateCidr.Arn
+      CidrApiEndpoint: !Ref CidrApiEndpoint
+      Cidr: !GetAtt AllocateCidr.cidr
+      VpcId: !Ref VPC
+      ApiRegion: !Select [2, !Split [".", !Ref CidrApiEndpoint]]
+
+Outputs:
+  VpcId:
+    Value: !Ref VPC
+  VpcCidr:
+    Value: !GetAtt AllocateCidr.cidr

@@ -1,0 +1,276 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  DDBSubnetsTableName:
+    Type: String
+    Default: ip-mgmt-subnets
+  DDBSupernetsTableName:
+    Type: String
+    Default: ip-mgmt-supernets
+  OrganizationsId:
+    Type: String
+    Default: o-kfsxtj8fwl
+  RootOrganizationUnitId:
+    Type: String
+    Default: r-4rhz
+  S3CodeBucket:
+    Type: String
+  FailureAlertEmail:
+    Type: String
+
+Resources:
+  DynamoDBSubnetsTable: 
+    Type: AWS::DynamoDB::Table
+    Properties: 
+      TableName: !Ref DDBSubnetsTableName
+      AttributeDefinitions: 
+        - 
+          AttributeName: "Cidr"
+          AttributeType: "S"
+      KeySchema: 
+        - 
+          AttributeName: "Cidr"
+          KeyType: "HASH"
+      ProvisionedThroughput: 
+        ReadCapacityUnits: "5"
+        WriteCapacityUnits: "5"
+
+  DynamoDBSupernetsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref DDBSupernetsTableName
+      AttributeDefinitions:
+        - 
+          AttributeName: "Cidr"
+          AttributeType: "S"
+      KeySchema:
+        - 
+          AttributeName: "Cidr"
+          KeyType: "HASH"
+      ProvisionedThroughput:
+        ReadCapacityUnits: "5"
+        WriteCapacityUnits: "5"
+
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+            - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+              - lambda.amazonaws.com
+        Version: 2012-10-17
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSLambdaExecute
+        - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+      Policies:
+        - PolicyName: ip-mgmt-lambda-sns-access
+          PolicyDocument:
+            Statement:
+              - Sid: GrantSnsAccess
+                Effect: Allow
+                Action:
+                - sns:Publish
+                Resource: !Ref SnsAlerts
+      Path: /
+
+  IpMgmtFunction: 
+    Type: AWS::Lambda::Function
+    Properties: 
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaRole.Arn
+      Code: 
+        S3Bucket: !Ref S3CodeBucket
+        S3Key: ipmgmt.zip
+      Runtime: python3.8
+      Timeout: 120
+      DeadLetterConfig:
+        TargetArn: !Ref SnsAlerts
+      Environment:
+        Variables:
+          DYNAMODB_TABLE_NAME: !Ref DDBSubnetsTableName
+          SUPERNETSTABLE: !Ref DDBSupernetsTableName
+
+  ApiGatewayRestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Description: An API Gateway to allow IP Management
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      Name: ip-mgmt-api
+      Policy: !Sub |
+        {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": "*",
+                    "Action": "execute-api:Invoke",
+                    "Resource": "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*",
+                    "Condition": {
+                        "ForAnyValue:StringLike": {
+                            "aws:PrincipalOrgPaths": "${OrganizationsId}/${RootOrganizationUnitId}/*"
+                        }
+                    }
+                }
+            ]
+        }
+
+  RequestValidator:
+    Type: AWS::ApiGateway::RequestValidator
+    Properties: 
+      RestApiId: !Ref ApiGatewayRestApi
+      ValidateRequestParameters: true
+
+  ApiGatewayResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: 'lambda'
+      RestApiId: !Ref ApiGatewayRestApi
+
+  ApiGatewayGetMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: AWS_IAM
+      HttpMethod: GET
+      Integration:
+        ConnectionType: INTERNET
+        Credentials: !GetAtt ApiGatewayIamRole.Arn
+        IntegrationHttpMethod: POST
+        PassthroughBehavior: WHEN_NO_MATCH
+        TimeoutInMillis: 29000
+        Type: AWS_PROXY
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${IpMgmtFunction.Arn}/invocations'
+      OperationName: 'lambda'
+      ResourceId: !Ref ApiGatewayResource
+      RestApiId: !Ref ApiGatewayRestApi
+      RequestValidatorId: !Ref RequestValidator
+      RequestParameters:
+        method.request.querystring.Cidr: true
+
+  ApiGatewayMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: AWS_IAM
+      HttpMethod: POST
+      Integration:
+        ConnectionType: INTERNET
+        Credentials: !GetAtt ApiGatewayIamRole.Arn
+        IntegrationHttpMethod: POST
+        PassthroughBehavior: WHEN_NO_MATCH
+        TimeoutInMillis: 29000
+        Type: AWS_PROXY
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${IpMgmtFunction.Arn}/invocations'
+      OperationName: 'lambda'
+      ResourceId: !Ref ApiGatewayResource
+      RestApiId: !Ref ApiGatewayRestApi
+      RequestValidatorId: !Ref RequestValidator
+      RequestParameters:
+        method.request.querystring.AccountId: true
+        method.request.querystring.prefix: true
+        method.request.querystring.ProjectCode: true
+        method.request.querystring.Reason: true
+        method.request.querystring.Requestor: true
+        method.request.querystring.Region: true
+        method.request.querystring.Env: true
+
+  ApiGatewayDeleteMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: AWS_IAM
+      HttpMethod: DELETE
+      Integration:
+        ConnectionType: INTERNET
+        Credentials: !GetAtt ApiGatewayIamRole.Arn
+        IntegrationHttpMethod: POST
+        PassthroughBehavior: WHEN_NO_MATCH
+        TimeoutInMillis: 29000
+        Type: AWS_PROXY
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${IpMgmtFunction.Arn}/invocations'
+      OperationName: 'lambda'
+      ResourceId: !Ref ApiGatewayResource
+      RestApiId: !Ref ApiGatewayRestApi
+      RequestValidatorId: !Ref RequestValidator
+      RequestParameters:
+        method.request.querystring.Cidr: true
+
+  ApiGatewayUpdateMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: AWS_IAM
+      HttpMethod: PUT
+      Integration:
+        ConnectionType: INTERNET
+        Credentials: !GetAtt ApiGatewayIamRole.Arn
+        IntegrationHttpMethod: POST
+        PassthroughBehavior: WHEN_NO_MATCH
+        TimeoutInMillis: 29000
+        Type: AWS_PROXY
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${IpMgmtFunction.Arn}/invocations'
+      OperationName: 'lambda'
+      ResourceId: !Ref ApiGatewayResource
+      RestApiId: !Ref ApiGatewayRestApi
+      RequestValidatorId: !Ref RequestValidator
+      RequestParameters:
+        method.request.querystring.Cidr: true
+        method.request.querystring.VpcId: true
+
+  ApiGatewayModel:
+    Type: AWS::ApiGateway::Model
+    Properties:
+      ContentType: 'application/json'
+      RestApiId: !Ref ApiGatewayRestApi
+      Schema: {}
+
+  ApiGatewayStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      DeploymentId: !Ref ApiGatewayDeployment
+      Description: Lambda API Stage v0
+      RestApiId: !Ref ApiGatewayRestApi
+      StageName: 'v0'
+
+  ApiGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn: ApiGatewayMethod
+    Properties:
+      Description: Lambda API Deployment
+      RestApiId: !Ref ApiGatewayRestApi
+
+  ApiGatewayIamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: ''
+            Effect: 'Allow'
+            Principal:
+              Service:
+                - 'apigateway.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+      Path: '/'
+      Policies:
+        - PolicyName: LambdaAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action: 'lambda:*'
+                Resource: !GetAtt IpMgmtFunction.Arn
+
+  SnsAlerts:
+    Type: AWS::SNS::Topic
+    Properties: 
+      Subscription: 
+        - Endpoint: !Ref FailureAlertEmail
+          Protocol: email

@@ -1,0 +1,52 @@
+{
+  "resource": "/lambda",
+  "path": "/lambda",
+  "httpMethod": "DELETE",
+  "headers": null,
+  "multiValueHeaders": null,
+  "queryStringParameters": {
+    "Cidr": "10.0.0.0/24"
+  },
+  "multiValueQueryStringParameters": {
+    "Cidr": [
+      "10.0.0.0/24"
+    ]
+  },
+  "pathParameters": null,
+  "stageVariables": null,
+  "requestContext": {
+    "resourceId": "lq94ro",
+    "resourcePath": "/lambda",
+    "operationName": "lambda",
+    "httpMethod": "DELETE",
+    "extendedRequestId": "UtkEGGyurPEFvDQ=",
+    "requestTime": "20/Oct/2020:13:32:22 +0000",
+    "path": "/lambda",
+    "accountId": "069558223396",
+    "protocol": "HTTP/1.1",
+    "stage": "test-invoke-stage",
+    "domainPrefix": "testPrefix",
+    "requestTimeEpoch": 1603200742959,
+    "requestId": "954043e4-a213-4b83-bccf-268fb342032b",
+    "identity": {
+      "cognitoIdentityPoolId": null,
+      "cognitoIdentityId": null,
+      "apiKey": "test-invoke-api-key",
+      "principalOrgId": null,
+      "cognitoAuthenticationType": null,
+      "userArn": "arn:aws:sts::069558223396:assumed-role/Admin/cjl-Isengard",
+      "apiKeyId": "test-invoke-api-key-id",
+      "userAgent": "aws-internal/3 aws-sdk-java/1.11.848 Linux/4.9.217-0.3.ac.206.84.332.metal1.x86_64 OpenJDK_64-Bit_Server_VM/25.262-b10 java/1.8.0_262 vendor/Oracle_Corporation",
+      "accountId": "069558223396",
+      "caller": "AROARAMP6IISBOAF75HQA:cjl-Isengard",
+      "sourceIp": "test-invoke-source-ip",
+      "accessKey": "ASIARAMP6IISNRDQLAOH",
+      "cognitoAuthenticationProvider": null,
+      "user": "AROARAMP6IISBOAF75HQA:cjl-Isengard"
+    },
+    "domainName": "testPrefix.testDomainName",
+    "apiId": "br3sivvwq7"
+  },
+  "body": null,
+  "isBase64Encoded": false
+}

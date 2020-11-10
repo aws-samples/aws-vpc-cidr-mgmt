@@ -3,7 +3,7 @@ AWSTemplateFormatVersion: 2010-09-09
 Parameters:
   CidrApiEndpoint:
     Type: String
-    Default: https://akg5qkai5g.execute-api.eu-west-1.amazonaws.com/v0
+    Default: https://9ux823go17.execute-api.eu-west-1.amazonaws.com/v0
   VpcCidrSize:
     Type: String
     AllowedValues: [ "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28" ]
@@ -63,6 +63,7 @@ Resources:
               Reason = event['ResourceProperties']['Reason']
               Region = event['ResourceProperties']['Region']
               Env = event['ResourceProperties']['Env']
+              StackId = event['ResourceProperties']['StackId'].split('/')[-1]
               CidrApiEndpoint = event['ResourceProperties']['CidrApiEndpoint'] \
                   + '/lambda' \
                   + '?AccountId=' + AccountId \
@@ -71,8 +72,12 @@ Resources:
                   + '&Requestor=' + urllib.parse.quote(Requestor) \
                   + '&Reason=' + urllib.parse.quote(Reason) \
                   + '&Region=' + Region \
-                  + '&Env=' + Env
+                  + '&Env=' + Env \
+                  + '&StackId=' + StackId
               Region = event['ResourceProperties']['ApiRegion']
+              DeleteEndpoint = event['ResourceProperties']['CidrApiEndpoint'] \
+                  + '/lambda' \
+                  + '?StackId=' + StackId
               print(CidrApiEndpoint)
               
               import cfnresponse as cfn
@@ -98,6 +103,8 @@ Resources:
                       cfn.send(event, context, cfn.FAILED, rd, 'cidrAllocation')
               elif event['RequestType'] == 'Delete':
                   try:
+                      headers = {'Content-Type': 'application/x-amz-json-1.1'}
+                      response = signed_request('DELETE', DeleteEndpoint, Region, data=None, params=None, headers=headers)
                       cfn.send(event, context, cfn.SUCCESS, rd, 'cidrRemoval')
                   except Exception as e:
                       rd['error'] = e
@@ -157,6 +164,7 @@ Resources:
       Region: !Ref AWS::Region
       Env: !Ref Environment
       ApiRegion: !Select [2, !Split [".", !Ref CidrApiEndpoint]]
+      StackId: !Ref AWS::StackId
 
   updateCidr:
     Type: AWS::Lambda::Function

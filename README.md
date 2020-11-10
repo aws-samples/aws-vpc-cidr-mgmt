@@ -15,6 +15,8 @@ The API is protected by IAM authentication and contains a resource policy that r
 
 # Deployment
 
+The solution can be deployed into any account within your AWS Organization. Typically this would be your central networking account which is managed by your core network engineers.
+
 1. Either create a new bucket or use an existing bucket in the account and region where you will be deploying the application. This will be used to store the lambda deployment code.
 
 2. Upload the ip-mgmt.zip file to the new or existing bucket.

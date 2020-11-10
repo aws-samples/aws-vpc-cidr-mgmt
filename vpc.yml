@@ -6,6 +6,7 @@ Parameters:
     Default: https://akg5qkai5g.execute-api.eu-west-1.amazonaws.com/v0
   VpcCidrSize:
     Type: String
+    AllowedValues: [ "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28" ]
   ProjectCode:
     Type: String
   Requestor:

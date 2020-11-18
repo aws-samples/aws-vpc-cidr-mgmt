@@ -13,6 +13,10 @@ The solution also provides a CloudFormation template that will request CIDR rang
 
 The API is protected by IAM authentication and contains a resource policy that restricts access to allow ONLY allow requests from accounts that are part of the AWS Organization.
 
+  <img src="images/aws-vpc-ipam.png"
+     alt="Architecture"
+     style="float: left; margin-right: 200px;" />
+
 # Deployment
 
 The solution can be deployed into any account within your AWS Organization. Typically this would be your central networking account which is managed by your core network engineers.

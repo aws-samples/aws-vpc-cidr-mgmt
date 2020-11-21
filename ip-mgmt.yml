@@ -271,3 +271,15 @@ Resources:
       Subscription: 
         - Endpoint: !Ref FailureAlertEmail
           Protocol: email
+
+Outputs:
+  CidrMgmtDynamoDBSupernetsTable:
+    Description: DynamoDB supernet table arn used by AWS backup
+    Value: !GetAtt DynamoDBSupernetsTable.Arn
+    Export:
+      Name: CidrMgmtDynamoDBSupernetsTable
+  CidrMgmtDynamoDBSubnetsTable:
+    Description: DynamoDB supnet table arn used by AWS backup
+    Value: !GetAtt DynamoDBSubnetsTable.Arn
+    Export:
+      Name: CidrMgmtDynamoDBSubnetsTable

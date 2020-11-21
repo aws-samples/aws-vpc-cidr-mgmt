@@ -1,0 +1,84 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+  retentionPeriod:
+    Type: String
+    Default: 28
+
+Resources:
+
+  BackupVault:
+    Type: AWS::Backup::BackupVault
+    Properties: 
+      BackupVaultName: CidrSolutionBackups
+
+  BackupRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+            - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+              - backup.amazonaws.com
+        Version: 2012-10-17
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSBackupServiceRolePolicyForBackup
+        - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+      Path: /
+      Policies:
+        - PolicyName: AWSBackupPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                - dynamodb:DescribeTable
+                - dynamodb:CreateBackup
+                Resource: 
+                  - !Sub 
+                    - ${DDBSubnetTable}/*
+                    - { DDBSubnetTable: !ImportValue CidrMgmtDynamoDBSubnetsTable }
+                  - !Sub 
+                    - ${DynamoDBSupernetTable}/*
+                    - { DynamoDBSupernetTable: !ImportValue CidrMgmtDynamoDBSupernetsTable }
+                Effect: Allow
+              - Action:
+                - dynamodb:DescribeBackup
+                - dynamodb:DeleteBackup
+                Resource: 
+                  - !Sub
+                    - ${DDBSubnetTable}/*/backup/*
+                    - { DDBSubnetTable: !ImportValue CidrMgmtDynamoDBSubnetsTable }
+                  - !Sub
+                    - ${DynamoDBSupernetTable}/*/backup/*
+                    - { DynamoDBSupernetTable: !ImportValue CidrMgmtDynamoDBSupernetsTable }
+                Effect: Allow
+              - Effect: Allow
+                Action:
+                - backup:DescribeBackupVault
+                - backup:CopyIntoBackupVault
+                Resource: !Sub arn:aws:backup:*:*:${BackupVault}:*
+
+  Backup:
+    Type: AWS::Backup::BackupPlan
+    Properties: 
+      BackupPlan:
+        BackupPlanName: cidr-mgmt-solution
+        BackupPlanRule:
+          - Lifecycle:
+              DeleteAfterDays: !Ref retentionPeriod
+            RuleName: dynamoDbTables
+            TargetBackupVault: !Ref BackupVault
+
+  BackupResources:
+    Type: AWS::Backup::BackupSelection
+    Properties: 
+      BackupPlanId: !Ref Backup
+      BackupSelection: 
+        IamRoleArn: !GetAtt BackupRole.Arn
+        Resources:
+          - !ImportValue CidrMgmtDynamoDBSubnetsTable
+          - !ImportValue CidrMgmtDynamoDBSupernetsTable
+        SelectionName: dynamoDbBackup

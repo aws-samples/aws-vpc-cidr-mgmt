@@ -102,6 +102,18 @@ VpcCidrSize: Size of the VPC subnet e.g. /25, /24, /23 etc
 
 Leave the rest of the options as defaults and click **Next**. On the next page check **I acknowledge that AWS CloudFormation might create IAM resources.** at the bottom of the page and **Create Stack**.
 
+# Enabling backups
+
+As per AWS best practice backups are created in a seperate CloudFromation template. This protects the backups even if the original CloudFormation stack is deleted.
+
+To enable backups of the dyanamoDB tables where your CIDR allocations are stored deploy the stack:
+
+```
+enable_backups.yml
+```
+
+The default retention is 28 days. This can be changed by amending the **retention** parameter when you deploy the stack.
+
 ## Amending the template
 
 The VPC template currently only allocates subnets and creates the VPC. you may wish to edit the template to create a set of "standard" VPCs within your organisation.

@@ -92,6 +92,7 @@ Resources:
         Variables:
           DYNAMODB_TABLE_NAME: !Ref DDBSubnetsTableName
           SUPERNETSTABLE: !Ref DDBSupernetsTableName
+          SNS_TOPIC: !Ref SnsAlerts
 
   ApiGatewayRestApi:
     Type: AWS::ApiGateway::RestApi

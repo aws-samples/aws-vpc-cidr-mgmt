@@ -114,6 +114,10 @@ enable_backups.yml
 
 The default retention is 28 days. This can be changed by amending the **retention** parameter when you deploy the stack.
 
+# Monitoring
+
+Each time a request is made for a CIDR the tool checks how much freespace is available for the Environment and Region being requested. Once 80% of all available address is used for any environment and region combination an alert is sent to the alert email address you supplied when you installed the solution. This gives the network team time to add more CIDR ranges to resolve the issue.
+
 ## Amending the template
 
 The VPC template currently only allocates subnets and creates the VPC. you may wish to edit the template to create a set of "standard" VPCs within your organisation.

@@ -1,69 +1,112 @@
 {
-  "body": null,
-  "queryStringParameters": {
-    "Requestor": "cjl",
-    "prefix": "24",
-    "VpcId": "vpc-123456",
-    "Reason": "test",
-    "AccountId": "069558223396",
-    "ProjectCode": "test"
-  },
-  "pathParameters": null,
-  "httpMethod": "POST",
-  "stageVariables": null,
-  "path": "/lambda",
-  "isBase64Encoded": false,
   "resource": "/lambda",
-  "requestContext": {
-    "requestTime": "16/Oct/2020:15:02:25 +0000",
-    "protocol": "HTTP/1.1",
-    "domainName": "testPrefix.testDomainName",
-    "resourceId": "5m4j1r",
-    "apiId": "qcs7kseb65",
-    "operationName": "lambda",
-    "resourcePath": "/lambda",
-    "httpMethod": "POST",
-    "domainPrefix": "testPrefix",
-    "requestId": "2c082ee4-9520-4b82-80b9-5629863cfdcd",
-    "extendedRequestId": "UglgRGr2LPEFosQ=",
-    "path": "/lambda",
-    "stage": "test-invoke-stage",
-    "requestTimeEpoch": 1602860545691,
-    "identity": {
-      "apiKey": "test-invoke-api-key",
-      "userArn": "arn:aws:sts::069558223396:assumed-role/Admin/cjl-Isengard",
-      "user": "AROARAMP6IISBOAF75HQA:cjl-Isengard",
-      "cognitoIdentityPoolId": null,
-      "userAgent": "aws-internal/3 aws-sdk-java/1.11.848 Linux/4.9.217-0.3.ac.206.84.332.metal1.x86_64 OpenJDK_64-Bit_Server_VM/25.262-b10 java/1.8.0_262 vendor/Oracle_Corporation",
-      "accountId": "069558223396",
-      "principalOrgId": null,
-      "accessKey": "ASIARAMP6IISBRFU3ZLQ",
-      "caller": "AROARAMP6IISBOAF75HQA:cjl-Isengard",
-      "cognitoIdentityId": null,
-      "cognitoAuthenticationType": null,
-      "sourceIp": "test-invoke-source-ip",
-      "apiKeyId": "test-invoke-api-key-id",
-      "cognitoAuthenticationProvider": null
-    },
-    "accountId": "069558223396"
+  "path": "/lambda",
+  "httpMethod": "POST",
+  "headers": {
+    "Accept-Encoding": "identity",
+    "Content-Type": "application/x-amz-json-1.1",
+    "Host": "ub9mh3u5t7.execute-api.eu-west-2.amazonaws.com",
+    "X-Amz-Date": "20201024T052454Z",
+    "X-Amz-Security-Token": "IQoJb3JpZ2luX2VjEG4aCWV1LXdlc3QtMiJHMEUCIQDW3aBk3nZ0SaC3mItzxDJdhfytoLYgRU2pmoFgmyyK+gIgW7HaHvJjiFfMmn7ogjIU829volIOuNpaclYL2igx3eAq/QEIt///////////ARAAGgwyNDM3ODA2NTI5NDEiDDcR4HSoDxKizvWUYirRARIuMoNuKKSJBGVpXh+XMXa1vHRP95ycG52D/pTPaA8Ds1icWPfjCFyN3bStVjqf70uMP0GOqIXsWa6IIWZiKdULRuq5MyyK1bkplzqpDGOCTW72nFL+wBqYIVCZkEie3Gxiu6TSzfkY+ajjUFO1KQsbzxdXHuQ8mqFjJBx8PtfAJHahmjrvoKpdMsykQTXoeMpBKu0g3Nsuj+SzI/5oZv/D7zgBarZ0SDzch3wE19JQaHgVRcl2tt5orKqdoJK8gK+7lEYVy+R4oipwq/RdfJc/MKb1zvwFOuABBm2fD1QwAIOGt8JwApqubISCyTq3bEBJHKTP0aqOsIM+LIJSDX/LdjidCpxqVPkp+kKxyL3osTO6LrxNetEB9cwfuXvyGlQGjzEst5/g2wgR0WrbNFiiJetn8CxlGPPqr7ig7pp+tgW6JKEKXH0eJiibTDWyKkdLn/iPS3TzCOPE/o/OJm7wVPlQcpfM5WrA7mWqH+sqROnZ3GM2AdNKGP5R+ZjxFmkBROqq2VkAcqFbNs0JAc1Sec8NgCss+S0b1dSq1bCtBgNmPUtdMowFmcJDNPYZfB69c4H4YcBSNYo=",
+    "X-Amzn-Trace-Id": "Root=1-5f93baa6-22e51a57634635b967a14e75",
+    "X-Forwarded-For": "3.8.4.19",
+    "X-Forwarded-Port": "443",
+    "X-Forwarded-Proto": "https"
   },
-  "multiValueHeaders": null,
+  "multiValueHeaders": {
+    "Accept-Encoding": [
+      "identity"
+    ],
+    "Content-Type": [
+      "application/x-amz-json-1.1"
+    ],
+    "Host": [
+      "ub9mh3u5t7.execute-api.eu-west-2.amazonaws.com"
+    ],
+    "X-Amz-Date": [
+      "20201024T052454Z"
+    ],
+    "X-Amz-Security-Token": [
+      "IQoJb3JpZ2luX2VjEG4aCWV1LXdlc3QtMiJHMEUCIQDW3aBk3nZ0SaC3mItzxDJdhfytoLYgRU2pmoFgmyyK+gIgW7HaHvJjiFfMmn7ogjIU829volIOuNpaclYL2igx3eAq/QEIt///////////ARAAGgwyNDM3ODA2NTI5NDEiDDcR4HSoDxKizvWUYirRARIuMoNuKKSJBGVpXh+XMXa1vHRP95ycG52D/pTPaA8Ds1icWPfjCFyN3bStVjqf70uMP0GOqIXsWa6IIWZiKdULRuq5MyyK1bkplzqpDGOCTW72nFL+wBqYIVCZkEie3Gxiu6TSzfkY+ajjUFO1KQsbzxdXHuQ8mqFjJBx8PtfAJHahmjrvoKpdMsykQTXoeMpBKu0g3Nsuj+SzI/5oZv/D7zgBarZ0SDzch3wE19JQaHgVRcl2tt5orKqdoJK8gK+7lEYVy+R4oipwq/RdfJc/MKb1zvwFOuABBm2fD1QwAIOGt8JwApqubISCyTq3bEBJHKTP0aqOsIM+LIJSDX/LdjidCpxqVPkp+kKxyL3osTO6LrxNetEB9cwfuXvyGlQGjzEst5/g2wgR0WrbNFiiJetn8CxlGPPqr7ig7pp+tgW6JKEKXH0eJiibTDWyKkdLn/iPS3TzCOPE/o/OJm7wVPlQcpfM5WrA7mWqH+sqROnZ3GM2AdNKGP5R+ZjxFmkBROqq2VkAcqFbNs0JAc1Sec8NgCss+S0b1dSq1bCtBgNmPUtdMowFmcJDNPYZfB69c4H4YcBSNYo="
+    ],
+    "X-Amzn-Trace-Id": [
+      "Root=1-5f93baa6-22e51a57634635b967a14e75"
+    ],
+    "X-Forwarded-For": [
+      "3.8.4.19"
+    ],
+    "X-Forwarded-Port": [
+      "443"
+    ],
+    "X-Forwarded-Proto": [
+      "https"
+    ]
+  },
+  "queryStringParameters": {
+    "AccountId": "243780652941",
+    "Env": "Dev",
+    "ProjectCode": "r-4567",
+    "Reason": "test",
+    "Region": "eu-west-2",
+    "Requestor": "cjl",
+    "prefix": "24"
+  },
   "multiValueQueryStringParameters": {
+    "AccountId": [
+      "243780652941"
+    ],
+    "Env": [
+      "Dev"
+    ],
+    "ProjectCode": [
+      "r-4567"
+    ],
+    "Reason": [
+      "test"
+    ],
+    "Region": [
+      "eu-west-2"
+    ],
     "Requestor": [
       "cjl"
     ],
     "prefix": [
       "24"
-    ],
-    "VpcId": [
-      "vpc-123456"
-    ],
-    "Reason": [
-      "test"
-    ],
-    "AccountId": [
-      "069558223396"
     ]
   },
-  "headers": null
+  "pathParameters": null,
+  "stageVariables": null,
+  "requestContext": {
+    "resourceId": "dnaey6",
+    "resourcePath": "/lambda",
+    "operationName": "lambda",
+    "httpMethod": "POST",
+    "extendedRequestId": "U5oaCHL_LPEFSXg=",
+    "requestTime": "24/Oct/2020:05:24:54 +0000",
+    "path": "/v0/lambda",
+    "accountId": "996083381748",
+    "protocol": "HTTP/1.1",
+    "stage": "v0",
+    "domainPrefix": "ub9mh3u5t7",
+    "requestTimeEpoch": 1603517094510,
+    "requestId": "9f429b63-85b6-4908-9c7e-917db7593a1f",
+    "identity": {
+      "cognitoIdentityPoolId": null,
+      "accountId": "243780652941",
+      "cognitoIdentityId": null,
+      "caller": "AROATRQTVR6G7T64AC4JT:SC-243780652941-pp-ehygefpbnvnqm-getCidr-ZOYJVOHDS7S8",
+      "sourceIp": "3.8.4.19",
+      "principalOrgId": "o-kfsxtj8fwl",
+      "accessKey": "ASIATRQTVR6GUZIDWUQN",
+      "cognitoAuthenticationType": null,
+      "cognitoAuthenticationProvider": null,
+      "userArn": "arn:aws:sts::243780652941:assumed-role/SC-243780652941-pp-ehygefpbnvn-LambdaExecutionRole-7OC7XMQY5ZT2/SC-243780652941-pp-ehygefpbnvnqm-getCidr-ZOYJVOHDS7S8",
+      "userAgent": null,
+      "user": "AROATRQTVR6G7T64AC4JT:SC-243780652941-pp-ehygefpbnvnqm-getCidr-ZOYJVOHDS7S8"
+    },
+    "domainName": "ub9mh3u5t7.execute-api.eu-west-2.amazonaws.com",
+    "apiId": "ub9mh3u5t7"
+  },
+  "body": null,
+  "isBase64Encoded": false
 }

@@ -4,12 +4,15 @@ import boto3
 import botocore.exceptions
 from boto3.dynamodb.conditions import Attr 
 from netaddr import *
+import decimal
 from datetime import datetime
 
 dynamodb = boto3.resource('dynamodb')
 dynamodbTableName = os.environ['DYNAMODB_TABLE_NAME']
 table = dynamodb.Table(dynamodbTableName)
 supernetTable = dynamodb.Table(os.environ['SUPERNETSTABLE'])
+snsTopic = os.environ['SNS_TOPIC']
+snsClient = boto3.client('sns')
 
 def returnSupernet(Table, Region, Env):
     supernets = []
@@ -25,7 +28,7 @@ def returnSupernet(Table, Region, Env):
     else:
         raise LookupError('no supernets where found for this region or environment')
 
-def addToDDB(cidr, AccountId, Requestor, Reason, Region, Env, ProjectCode, StackId):
+def addToDDB(cidr, AccountId, Requestor, Reason, Region, Env, ProjectCode):
     response = table.put_item(
     Item={
         'Cidr': cidr,
@@ -34,16 +37,12 @@ def addToDDB(cidr, AccountId, Requestor, Reason, Region, Env, ProjectCode, Stack
         'ProjectCode': ProjectCode,
         'Reason': Reason,
         'Region': Region,
-        'Env': Env,
-        'StackId': StackId,
-        'DateTime': datetime.now().strftime("%Y-%m-%d:%H:%M:%S")
+        'Env': Env
         },
         ConditionExpression='attribute_not_exists(Cidr)'
     )
     
-def deleteCidrDDB(cidr=None, stackId=None):
-    if cidr == None:
-        cidr = table.scan(ConsistentRead=True, FilterExpression=Attr("StackId").eq(stackId))['Items'][0]['Cidr']
+def deleteCidrDDB(cidr):
     table.delete_item(
         Key={
             'Cidr': cidr
@@ -76,8 +75,27 @@ def findAvailableSubnets(supernetSet, usedSubnets):
     for subnet in usedSubnets:
         supernetSet.remove(subnet)
     return supernetSet
+    
+def alert(percentageUsed, Region, Env):
+    response = snsClient.publish(
+        TopicArn=snsTopic,
+        Message='WARNING: ' + Env + ' in region ' + Region + ' has used ' + str(percentageUsed) + '% of available CIDR addresses',
+        Subject='WARNING free CIDR ranges running low',
+    )
+    print(response)
+    print('alert')
+    return response
+    
+def monitoring(supernetSet, freeSubnets, Region, Env):
+    percentageUsed = int(100-((freeSubnets/supernetSet)*100))
+    if percentageUsed > 80:
+        alert(percentageUsed, Region, Env)
+        return
+    else:
+        return
 
-def returnAvailableSubnet(supernetSet, usedSubnets, subnetPrefix):
+def returnAvailableSubnet(supernetSet, usedSubnets, subnetPrefix, Region, Env):
+    totalIps = supernetSet.size
     findAvailableSubnets(supernetSet, usedSubnets)
     freeSubnets = []
     for network in supernetSet.iter_cidrs():
@@ -85,10 +103,12 @@ def returnAvailableSubnet(supernetSet, usedSubnets, subnetPrefix):
         subnets = list(newNetwork.subnet(subnetPrefix))
         for subnet in subnets:
             freeSubnets.append(subnet)
+    totalFreeIps = IPSet(freeSubnets).size
+    monitoring(totalIps, totalFreeIps, Region, Env)
     if len(freeSubnets) > 0:
         return freeSubnets[0]
     else:
-        raise LookupError('no available subets for this region and environment')
+        raise LookupError('no avaialble subets for this region and environment')
     
 def scanDDB(Table, LastEvaluatedKey=None, Region=None, Env=None):
     if LastEvaluatedKey == None:
@@ -121,10 +141,6 @@ def lambda_handler(event, context):
                     Reason = event['queryStringParameters']['Reason']
                     Region = event['queryStringParameters']['Region']
                     Env = event['queryStringParameters']['Env']
-                    if "StackId" in event['queryStringParameters']:
-                        StackId = event['queryStringParameters']['StackId']
-                    else:
-                        StackId = None
                     
                     if "ProjectCode" in event['queryStringParameters']:
                         ProjectCode = event['queryStringParameters']['ProjectCode']
@@ -135,9 +151,9 @@ def lambda_handler(event, context):
                     usedSubnets = getUsedCidrs(Region, Env)
                 
                     supernetSet = IPSet(supernet)
-                    cidrToAssign = str(returnAvailableSubnet(supernetSet, usedSubnets, prefix))
+                    cidrToAssign = str(returnAvailableSubnet(supernetSet, usedSubnets, prefix, Region, Env))
                     
-                    addToDDB(cidrToAssign, AccountId, Requestor, Reason, Region, Env, ProjectCode, StackId)
+                    addToDDB(cidrToAssign, AccountId, Requestor, Reason, Region, Env, ProjectCode)
                     
                     response = {
                               'isBase64Encoded': False,
@@ -163,32 +179,18 @@ def lambda_handler(event, context):
                     return response
                 break
     elif event['httpMethod'] == 'DELETE':
-        if "StackId" in event['queryStringParameters']:
-            StackId = event['queryStringParameters']['StackId']
-        else:
-            StackId = None
         try:
-            if "Cidr" in event['queryStringParameters']:
-                cidr = event['queryStringParameters']['Cidr']
-                deleteCidrDDB(cidr=cidr)
-                response = {
-                  'isBase64Encoded': False,
-                  'statusCode': 200,
-                  'headers': {},
-                  'multiValueHeaders': {},
-                  'body': 'CIDR: ' + cidr + ' deleted'
-                }
-                return response
-            else:
-                deleteCidrDDB(stackId=StackId)
-                response = {
-                  'isBase64Encoded': False,
-                  'statusCode': 200,
-                  'headers': {},
-                  'multiValueHeaders': {},
-                  'body': 'StackId: ' + StackId + ' deleted'
-                }
-                return response
+            cidr = event['queryStringParameters']['Cidr']
+            print(cidr)
+            deleteCidrDDB(cidr)
+            response = {
+              'isBase64Encoded': False,
+              'statusCode': 200,
+              'headers': {},
+              'multiValueHeaders': {},
+              'body': 'CIDR: ' + cidr + ' deleted'
+            }
+            return response
         except Exception as e:
             response = {
               'isBase64Encoded': False,
@@ -241,3 +243,8 @@ def lambda_handler(event, context):
               'body': 'Error: ' + str(e)
             }
             return response
+
+
+
+
+

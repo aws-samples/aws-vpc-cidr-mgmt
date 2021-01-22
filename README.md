@@ -29,17 +29,17 @@ The solution can be deployed into any account within your AWS Organization. Typi
 
 4. Add the additional parameters.
 
-  S3CodeBucket: the bucket you created or used in steps 1 and 2
-  OrganizationsId: the organisation ID. This can be found by logging into the master AWS account and opening the AWS Organizations console. Click **settings** in the top right corner. This page will display your organizations ID.
+  - S3CodeBucket: the bucket you created or used in steps 1 and 2
+  - OrganizationsId: the organisation ID. This can be found by logging into the master AWS account and opening the AWS Organizations console. Click **settings** in the top right corner. This page will display your organizations ID.
   <img src="images/org-id.png"
      alt="AWS Organizations ID"
      style="float: left; margin-right: 100px;" />
-  RootOrganizationUnitId: the root OU Id. This can be found by logging into the master AWS account and opening the AWS Organizations console. Click **Organize Accounts**. On the right side of the page you will see the Root OU ARN. You need to take copy the last part of this e.g. *r-4ght*
+  - RootOrganizationUnitId: the root OU Id. This can be found by logging into the master AWS account and opening the AWS Organizations console. Click **Organize Accounts**. On the right side of the page you will see the Root OU ARN. You need to take copy the last part of this e.g. *r-4ght*
   <img src="images/org-root-id.png"
      alt="AWS Organizations root OU ID"
      style="float: left; margin-right: 100px;" />
 
-  your completed parameters should look similar to:
+  - your completed parameters should look similar to:
   <img src="images/cf-params.png"
      alt="CloudFormations Parameters"
      style="float: left; margin-right: 100px;" />
@@ -69,6 +69,25 @@ Repeat this step for all regions and environments you wish to manage IP addressi
 <img src="images/ddb-supernet.png"
    alt="CloudFormations Parameters"
    style="float: left; margin-right: 100px;" />
+
+## Adding existing subnets
+
+In most cases you will already have existing CIDR address in your environment. If you wish to add these just create an item in the subnets DynamoDB table as follows (editing the values for your setup):
+
+```
+{
+  "AccountId": 1111111111111,
+  "Cidr": "10.0.128.0/24",
+  "Env": "Prod",
+  "ProjectCode": "InfrastructureServices",
+  "Reason": "SharedServices",
+  "Region": "eu-west-2",
+  "Requestor": "username",
+  "VpcId": "vpc-084c08281301eea5d"
+}
+```
+
+This will reserve the IP range and prevent it being released for another VPC.
 
 # Operations
 
